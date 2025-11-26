@@ -1,0 +1,13 @@
+fastapi==0.104.1
+fastapi-users[beanie]==12.1.2
+beanie==1.23.6
+motor==3.4.0
+python-multipart==0.0.6
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+email-validator==2.0.0
+pymongo==4.6.3
+bcrypt==3.2.0
