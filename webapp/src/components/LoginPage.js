@@ -3,6 +3,7 @@ import { useAuth } from '../AuthContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState(''); // 'error' or 'success'
   const { login, register, loading } = useAuth();
@@ -15,7 +16,12 @@ const LoginPage = () => {
       return;
     }
 
-    const result = await login(email);
+    if (!password) {
+      showMessage('Please enter your password', 'error');
+      return;
+    }
+
+    const result = await login(email, password);
     
     if (result.success) {
       showMessage('Login successful! Redirecting...', 'success');
@@ -32,7 +38,17 @@ const LoginPage = () => {
       return;
     }
 
-    const result = await register(email);
+    if (!password) {
+      showMessage('Please enter your password', 'error');
+      return;
+    }
+
+    if (password.length < 6) {
+      showMessage('Password must be at least 6 characters long', 'error');
+      return;
+    }
+
+    const result = await register(email, password);
     
     if (result.success) {
       showMessage('Registration successful! Redirecting...', 'success');
@@ -70,6 +86,20 @@ const LoginPage = () => {
           />
         </div>
 
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            disabled={loading}
+            required
+            minLength="6"
+          />
+        </div>
+
         {message && (
           <div className={messageType === 'error' ? 'error' : 'success'}>
             {message}
@@ -78,7 +108,7 @@ const LoginPage = () => {
 
         <button 
           type="submit" 
-          disabled={loading}
+          disabled={loading || !email.trim() || !password.trim()}
           onClick={handleLogin}
         >
           {loading ? 'Logging in...' : 'Login'}
@@ -86,7 +116,7 @@ const LoginPage = () => {
         
         <button 
           type="button" 
-          disabled={loading}
+          disabled={loading || !email.trim() || !password.trim() || password.length < 6}
           onClick={handleRegister}
           style={{ background: '#28a745' }}
         >
@@ -102,11 +132,11 @@ const LoginPage = () => {
         fontSize: '14px',
         color: '#666'
       }}>
-        <strong>Demo Mode:</strong><br />
-        • Password is hardcoded as "password123"<br />
-        • Just enter your email and click Login or Register<br />
-        • Register works even if user already exists<br />
-        • Try: outrunner@live.fr (existing user)
+        <strong>Security Notes:</strong><br />
+        • Password must be at least 6 characters<br />
+        • Existing users with default password "password123" can continue to use it<br />
+        • New users must create their own password<br />
+        • Try existing user: test2@hotmail.com (password: password123)
       </div>
     </div>
   );

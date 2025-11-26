@@ -54,13 +54,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email) => {
+  const login = async (email, password) => {
     setLoading(true);
     try {
       // First try to login with existing user
       const response = await axios.post('/api/authenticate', {
         email: email,
-        password: 'password123', // Hardcoded password
+        password: password, // Use provided password
         first_name: 'User',
         last_name: 'Name',
         create: false // Don't create, just try to login
@@ -94,12 +94,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email) => {
+  const register = async (email, password) => {
     setLoading(true);
     try {
       const response = await axios.post('/api/register', {
         email: email,
-        password: 'password123', // Hardcoded password
+        password: password, // Use provided password
         first_name: 'New',
         last_name: 'User'
       });

@@ -8,6 +8,8 @@ const FileManagementPage = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+  const [editingFile, setEditingFile] = useState(null);
+  const [newFileName, setNewFileName] = useState('');
 
   useEffect(() => {
     loadFiles();
@@ -122,6 +124,42 @@ const FileManagementPage = () => {
     }, 4000);
   };
 
+  const handleRename = (fileId, currentName) => {
+    console.log('handleRename called:', { fileId, currentName });
+    setEditingFile(fileId);
+    setNewFileName(currentName);
+    console.log('State set:', { editingFile: fileId, newFileName: currentName });
+  };
+
+  const saveRename = async (fileId) => {
+    if (!newFileName.trim()) {
+      showMessage('Le nom du fichier ne peut pas être vide', 'error');
+      return;
+    }
+
+    try {
+      // Utilise POST au lieu de PATCH si PATCH pose problème
+      const response = await axios.post(`/api/files/${fileId}/rename`, {
+        new_name: newFileName.trim()
+      });
+
+      if (response.data.success) {
+        showMessage(`Fichier renommé en "${response.data.new_display_name}"`, 'success');
+        setEditingFile(null);
+        setNewFileName('');
+        loadFiles(); // Rafraîchir la liste
+      }
+    } catch (error) {
+      console.error('Rename failed:', error);
+      showMessage('Échec du renommage: ' + (error.response?.data?.detail || error.message), 'error');
+    }
+  };
+
+  const cancelRename = () => {
+    setEditingFile(null);
+    setNewFileName('');
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -190,23 +228,137 @@ const FileManagementPage = () => {
           files.map((file) => (
             <div key={file.id} className="file-item">
               <div className="file-info">
-                <h4>📄 {file.name}</h4>
+                {editingFile === file.id ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <input
+                      key={`rename-input-${file.id}`}
+                      type="text"
+                      value={newFileName || ''}
+                      onChange={(e) => {
+                        console.log('Input change:', e.target.value);
+                        setNewFileName(e.target.value);
+                      }}
+                      onInput={(e) => {
+                        console.log('Input event:', e.target.value);
+                        setNewFileName(e.target.value);
+                      }}
+                      style={{
+                        padding: '8px !important',
+                        border: '2px solid #007bff !important',
+                        borderRadius: '4px !important',
+                        fontSize: '14px !important',
+                        flex: '1 !important',
+                        width: 'auto !important',
+                        outline: 'none !important',
+                        backgroundColor: 'white !important',
+                        color: 'black !important',
+                        boxSizing: 'border-box !important',
+                        minWidth: '200px !important'
+                      }}
+                      placeholder="Nouveau nom du fichier"
+                      autoFocus={true}
+                      disabled={false}
+                      readOnly={false}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        console.log('Key pressed:', e.key);
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          saveRename(file.id);
+                        }
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          cancelRename();
+                        }
+                      }}
+                      onFocus={(e) => {
+                        console.log('Input focused:', e.target.value);
+                        setTimeout(() => e.target.select(), 0);
+                      }}
+                      onClick={(e) => {
+                        console.log('Input clicked:', e.target.value);
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                      }}
+                    />
+                    <button
+                      onClick={() => saveRename(file.id)}
+                      style={{
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={cancelRename}
+                      style={{
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ✗
+                    </button>
+                  </div>
+                ) : (
+                  <h4 
+                    onClick={() => handleRename(file.id, file.name)}
+                    style={{ 
+                      cursor: 'pointer', 
+                      color: '#007bff',
+                      margin: '0 0 10px 0'
+                    }}
+                    title="Cliquer pour renommer"
+                  >
+                    📄 {file.name} ✏️
+                  </h4>
+                )}
                 <p>Size: {file.size} • Uploaded: {file.uploaded}</p>
               </div>
-              <div className="file-actions">
-                <button 
-                  onClick={() => handleDownload(file.id, file.name)}
-                  className="btn-secondary"
-                >
-                  Download
-                </button>
-                <button 
-                  onClick={() => handleDelete(file.id, file.name)}
-                  className="btn-danger"
-                >
-                  Delete
-                </button>
-              </div>
+              
+              {editingFile !== file.id && (
+                <div className="file-actions">
+                  <button 
+                    onClick={() => handleRename(file.id, file.name)}
+                    style={{
+                      backgroundColor: '#ffc107',
+                      color: '#000',
+                      border: 'none',
+                      padding: '8px 15px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      marginRight: '10px'
+                    }}
+                  >
+                    ✏️ Renommer
+                  </button>
+                  <button 
+                    onClick={() => handleDownload(file.id, file.name)}
+                    className="btn-secondary"
+                    style={{ marginRight: '10px' }}
+                  >
+                    📥 Download
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(file.id, file.name)}
+                    className="btn-danger"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}

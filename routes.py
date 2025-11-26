@@ -62,6 +62,9 @@ class AuthResponse(BaseModel):
     error: str = None
     details: Dict[str, Any] = None
 
+class RenameFileRequest(BaseModel):
+    new_name: str
+
 
 @router.post("/authenticate", response_model=AuthResponse)
 async def authenticate_user(request: AuthenticateRequest):
@@ -221,3 +224,41 @@ async def get_file_info(file_id: str, user: User = Depends(current_active_user))
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get file info: {str(e)}")
+
+@router.post("/files/{file_id}/rename")
+async def rename_file_post(
+    file_id: str, 
+    request: RenameFileRequest,
+    user: User = Depends(current_active_user)
+):
+    """Rename a file (update display name only) - POST operation"""
+    try:
+        file_service = FileService()
+        
+        result = await file_service.rename_file(
+            file_id=file_id,
+            new_display_name=request.new_name,
+            user_email=user.email,
+            user_id=str(user.id)
+        )
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "message": result["message"],
+                "new_display_name": result["new_display_name"],
+                "file_id": file_id
+            }
+        else:
+            # Determine appropriate HTTP status code
+            if "not found" in result["error"].lower() or "access denied" in result["error"].lower():
+                raise HTTPException(status_code=404, detail=result["error"])
+            elif "empty" in result["error"].lower() or "too long" in result["error"].lower():
+                raise HTTPException(status_code=400, detail=result["error"])
+            else:
+                raise HTTPException(status_code=500, detail=result["error"])
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
