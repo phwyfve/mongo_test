@@ -160,6 +160,66 @@ const FileManagementPage = () => {
     setNewFileName('');
   };
 
+  const handleDeleteAccount = async () => {
+    // First warning
+    if (!window.confirm(
+      `⚠️ DANGER: DELETE ACCOUNT\n\nThis will permanently delete:\n✗ Your account (${user.email})\n✗ ALL your files (${files.length} files)\n✗ All your data\n\nThis action CANNOT be undone!\n\nAre you sure you want to continue?`
+    )) {
+      return;
+    }
+
+    // Email confirmation
+    const confirmMessage = `🚨 SECURITY CONFIRMATION\n\nTo prevent accidental deletion, please type your email address exactly:\n\n"${user.email}"\n\n(This is case-sensitive)`;
+    const confirmation = window.prompt(confirmMessage);
+    
+    if (confirmation !== user.email) {
+      if (confirmation !== null) {
+        showMessage('Account deletion cancelled - email confirmation did not match', 'error');
+      }
+      return;
+    }
+
+    // Final confirmation with countdown
+    const finalConfirm = window.confirm(
+      `� FINAL CONFIRMATION\n\n✗ Deleting account: ${user.email}\n✗ Deleting ${files.length} files\n✗ Removing all data permanently\n\nTHIS ACTION IS IRREVERSIBLE!\n\nClick OK to proceed with PERMANENT DELETION.`
+    );
+
+    if (!finalConfirm) {
+      showMessage('Account deletion cancelled by user', 'error');
+      return;
+    }
+
+    try {
+      showMessage('⚠️ DELETING ACCOUNT... Please wait, this may take a moment.', 'success');
+      
+      const response = await axios.delete('/api/account');
+      
+      if (response.data.success) {
+        const filesDeleted = response.data.files_deleted || 0;
+        showMessage(
+          `🗑️ ACCOUNT DELETED SUCCESSFULLY!\n\n✅ Account removed: ${user.email}\n✅ Files deleted: ${filesDeleted}\n\nYou will be logged out in 5 seconds.`, 
+          'success'
+        );
+        
+        // Logout after 5 seconds to give user time to read the message
+        setTimeout(() => {
+          logout();
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('❌ Account deletion failed:', error);
+      if (error.response?.status === 403) {
+        showMessage('Access denied - cannot delete account. Please contact support.', 'error');
+      } else if (error.response?.status === 404) {
+        showMessage('Account not found. You may have already been deleted.', 'error');
+        // Still logout since account doesn't exist
+        setTimeout(() => logout(), 2000);
+      } else {
+        showMessage('Failed to delete account: ' + (error.response?.data?.detail || error.message), 'error');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -177,16 +237,29 @@ const FileManagementPage = () => {
             <h2>📁 My Files</h2>
             <p>Welcome, {user?.first_name} {user?.last_name} ({user?.email})</p>
           </div>
-          <button 
-            onClick={logout}
-            style={{ 
-              width: 'auto', 
-              padding: '8px 16px',
-              background: '#dc3545'
-            }}
-          >
-            Logout
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={handleDeleteAccount}
+              style={{ 
+                width: 'auto', 
+                padding: '8px 16px',
+                background: '#dc3545',
+                fontSize: '14px'
+              }}
+            >
+              🗑️ Delete Account
+            </button>
+            <button 
+              onClick={logout}
+              style={{ 
+                width: 'auto', 
+                padding: '8px 16px',
+                background: '#6c757d'
+              }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 

@@ -5,6 +5,8 @@ import httpx
 from typing import Optional, Dict, Any
 import random
 import string
+from models import User
+from file_service import FileService
 
 BASE_URL = "http://localhost:8000"
 
@@ -156,9 +158,96 @@ class UserService:
                     "response_text": response.text
                 }
         except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"Registration request failed: {str(e)}"
+                }
+    
+    async def delete_account_async(self, user_email: str, user_id: str) -> Dict[str, Any]:
+        """
+        Delete user account and all associated data.
+        This will:
+        1. Delete all user's files from GridFS
+        2. Delete the user from the database
+        
+        Args:
+            user_email: Email of user to delete
+            user_id: ID of user to delete
+            
+        Returns:
+            Dict with success/failure status and details
+        """
+        try:
+            print(f"🗑️ Starting account deletion for user: {user_email} (ID: {user_id})")
+            
+            # Step 1: Delete all user files using FileService
+            print("📁 Deleting user files...")
+            file_service = FileService()
+            
+            # Get all user files first
+            user_files = await file_service.list_user_files(user_email, user_id)
+            
+            if user_files:
+                print(f"Found {len(user_files)} files to delete")
+                files_deleted = 0
+                files_failed = 0
+                
+                for file_info in user_files:
+                    file_id = file_info['id']
+                    file_name = file_info['name']
+                    
+                    try:
+                        delete_result = await file_service.delete_file(file_id, user_email, user_id)
+                        if delete_result.get("success"):
+                            files_deleted += 1
+                            print(f"✅ Deleted file: {file_name}")
+                        else:
+                            files_failed += 1
+                            print(f"❌ Failed to delete file {file_name}: {delete_result.get('error')}")
+                    except Exception as e:
+                        files_failed += 1
+                        print(f"❌ Exception deleting file {file_name}: {str(e)}")
+                
+                print(f"📊 File deletion summary: {files_deleted} deleted, {files_failed} failed")
+            else:
+                print("No files found for user")
+            
+            # Step 2: Delete the user from database
+            print("👤 Deleting user from database...")
+            
+            # Find the user by email and ID
+            user = await User.find_one(User.email == user_email)
+            
+            if not user:
+                return {
+                    "success": False,
+                    "error": f"User not found: {user_email}"
+                }
+            
+            # Verify the user ID matches (security check)
+            if str(user.id) != user_id:
+                return {
+                    "success": False,
+                    "error": "User ID mismatch - access denied"
+                }
+            
+            # Delete the user
+            await user.delete()
+            
+            print(f"✅ User {user_email} successfully deleted from database")
+            
+            return {
+                "success": True,
+                "message": f"Account {user_email} successfully deleted",
+                "files_deleted": len(user_files) if user_files else 0,
+                "user_deleted": True
+            }
+            
+        except Exception as e:
+            print(f"❌ Account deletion failed: {str(e)}")
             return {
                 "success": False,
-                "error": f"Registration request failed: {str(e)}"
+                "error": f"Account deletion failed: {str(e)}"
             }
 
 def generate_random_email() -> str:

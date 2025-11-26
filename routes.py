@@ -262,3 +262,47 @@ async def rename_file_post(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
+
+
+@router.delete("/account")
+async def delete_account(user: User = Depends(current_active_user)):
+    """
+    Delete current user's account and all associated data
+     WARNING: This is a destructive operation that cannot be undone!
+    """
+    try:
+        print(f" ACCOUNT DELETION REQUEST")
+        print(f"   User: {user.email}")
+        print(f"   ID: {user.id}")
+        print(f"   Name: {user.first_name} {user.last_name}")
+        print(f"   Verified: {user.is_verified}")
+        
+        user_service = UserService()
+        result = await user_service.delete_account_async(
+            user_email=user.email,
+            user_id=str(user.id)
+        )
+        
+        if result["success"]:
+            print(f" ACCOUNT DELETION SUCCESSFUL: {user.email}")
+            print(f"   Files deleted: {result.get('files_deleted', 0)}")
+            return {
+                "success": True,
+                "message": result["message"],
+                "files_deleted": result.get("files_deleted", 0),
+                "account_deleted": user.email
+            }
+        else:
+            # Determine appropriate HTTP status code
+            if "not found" in result["error"].lower():
+                raise HTTPException(status_code=404, detail=result["error"])
+            elif "access denied" in result["error"].lower():
+                raise HTTPException(status_code=403, detail=result["error"])
+            else:
+                raise HTTPException(status_code=500, detail=result["error"])
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Account deletion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Account deletion failed: {str(e)}")
