@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from models import User
 from auth import current_active_user
 from user_service import UserService
+from file_service import FileService
 from typing import Dict, Any
+import io
 
 router = APIRouter()
 
@@ -115,65 +118,106 @@ async def register_user(request: RegisterRequest):
         )
 
 
-# File Management Routes (Protected)
+# File Management Routes (Protected) - Using GridFS
 @router.get("/files")
 async def list_files(user: User = Depends(current_active_user)):
-    """List user's files (protected route)"""
-    # Hardcoded file list for now
-    return {
-        "files": [
-            {
-                "id": "file_001",
-                "name": "document1.pdf",
-                "size": "2.5 MB",
-                "uploaded": "2024-11-25",
-                "owner": user.email
-            },
-            {
-                "id": "file_002", 
-                "name": "presentation.pptx",
-                "size": "5.1 MB",
-                "uploaded": "2024-11-24",
-                "owner": user.email
-            },
-            {
-                "id": "file_003",
-                "name": "spreadsheet.xlsx", 
-                "size": "1.2 MB",
-                "uploaded": "2024-11-23",
-                "owner": user.email
-            }
-        ],
-        "total": 3,
-        "user": user.email
-    }
+    """List user's files using GridFS"""
+    try:
+        file_service = FileService()
+        files = await file_service.list_user_files(user.email, str(user.id))
+        
+        return {
+            "files": files,
+            "total": len(files),
+            "user": user.email
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
 
 @router.post("/files/upload")
-async def upload_file(user: User = Depends(current_active_user)):
-    """Upload a file (protected route - mock for now)"""
-    return {
-        "success": True,
-        "message": "File uploaded successfully (mock)",
-        "file_id": "file_new_001",
-        "owner": user.email
-    }
+async def upload_file(file: UploadFile = File(...), user: User = Depends(current_active_user)):
+    """Upload a file using GridFS"""
+    try:
+        file_service = FileService()
+        
+        # Read file content
+        content = await file.read()
+        
+        result = await file_service.upload_file(
+            file_content=content,
+            filename=file.filename,
+            content_type=file.content_type,
+            user_email=user.email,
+            user_id=str(user.id)
+        )
+        
+        if result.get("success"):
+            return result
+        else:
+            raise HTTPException(status_code=500, detail=result.get("error", "Upload failed"))
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
 @router.delete("/files/{file_id}")
 async def delete_file(file_id: str, user: User = Depends(current_active_user)):
-    """Delete a file (protected route - mock for now)"""
-    return {
-        "success": True,
-        "message": f"File {file_id} deleted successfully (mock)",
-        "deleted_file_id": file_id,
-        "owner": user.email
-    }
+    """Delete a file using GridFS"""
+    try:
+        file_service = FileService()
+        
+        result = await file_service.delete_file(file_id, user.email, str(user.id))
+        
+        if result.get("success"):
+            return result
+        else:
+            if "not found" in result.get("error", "").lower():
+                raise HTTPException(status_code=404, detail=result.get("error"))
+            else:
+                raise HTTPException(status_code=500, detail=result.get("error"))
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
 
-@router.put("/files/{file_id}")
-async def update_file(file_id: str, user: User = Depends(current_active_user)):
-    """Update a file (protected route - mock for now)"""
-    return {
-        "success": True,
-        "message": f"File {file_id} updated successfully (mock)", 
-        "updated_file_id": file_id,
-        "owner": user.email
-    }
+@router.get("/files/{file_id}")
+async def download_file(file_id: str, user: User = Depends(current_active_user)):
+    """Download a file using GridFS"""
+    try:
+        file_service = FileService()
+        
+        # Download file content with user verification
+        file_data = await file_service.download_file(file_id, user.email, str(user.id))
+        if not file_data:
+            raise HTTPException(status_code=404, detail="File not found or access denied")
+        
+        # Create streaming response
+        return StreamingResponse(
+            io.BytesIO(file_data["content"]),
+            media_type=file_data["content_type"],
+            headers={"Content-Disposition": f"attachment; filename={file_data['filename']}"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download file: {str(e)}")
+
+@router.get("/files/{file_id}/info")
+async def get_file_info(file_id: str, user: User = Depends(current_active_user)):
+    """Get file information using GridFS"""
+    try:
+        file_service = FileService()
+        file_info = await file_service.get_file_info(file_id, user.email, str(user.id))
+        
+        if not file_info:
+            raise HTTPException(status_code=404, detail="File not found or access denied")
+        
+        return {
+            "success": True,
+            "file_info": file_info,
+            "owner": user.email
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get file info: {str(e)}")

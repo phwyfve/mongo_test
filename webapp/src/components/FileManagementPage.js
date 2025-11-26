@@ -49,30 +49,68 @@ const FileManagementPage = () => {
     }
   };
 
-  const handleUpdate = async (fileId, fileName) => {
+  const handleDownload = async (fileId, fileName) => {
     try {
-      const response = await axios.put(`/api/files/${fileId}`);
-      if (response.data.success) {
-        showMessage(`File "${fileName}" updated successfully`, 'success');
-      }
+      const response = await axios.get(`/api/files/${fileId}`, {
+        responseType: 'blob', // Important for file downloads
+      });
+      
+      // Create a temporary URL for the blob
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      showMessage(`File "${fileName}" downloaded successfully`, 'success');
     } catch (error) {
-      console.error('Update failed:', error);
-      showMessage('Failed to update file', 'error');
+      console.error('Download failed:', error);
+      if (error.response?.status === 404) {
+        showMessage('File not found or access denied', 'error');
+      } else {
+        showMessage('Failed to download file', 'error');
+      }
     }
   };
 
-  const handleUpload = async () => {
-    try {
-      const response = await axios.post('/api/files/upload');
-      if (response.data.success) {
-        showMessage('File uploaded successfully', 'success');
-        // Reload files to show the new one
-        await loadFiles();
+  const handleUpload = () => {
+    // Create a file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*'; // Accept images only for now
+    fileInput.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await axios.post('/api/files/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        if (response.data.success) {
+          showMessage(`File "${file.name}" uploaded successfully`, 'success');
+          // Reload files to show the new one
+          await loadFiles();
+        }
+      } catch (error) {
+        console.error('Upload failed:', error);
+        showMessage('Failed to upload file', 'error');
       }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      showMessage('Failed to upload file', 'error');
-    }
+    };
+    fileInput.click();
   };
 
   const showMessage = (msg, type) => {
@@ -131,7 +169,7 @@ const FileManagementPage = () => {
             background: '#28a745'
           }}
         >
-          📤 Upload File (Mock)
+          📤 Upload Image
         </button>
       </div>
 
@@ -157,10 +195,10 @@ const FileManagementPage = () => {
               </div>
               <div className="file-actions">
                 <button 
-                  onClick={() => handleUpdate(file.id, file.name)}
+                  onClick={() => handleDownload(file.id, file.name)}
                   className="btn-secondary"
                 >
-                  Edit
+                  Download
                 </button>
                 <button 
                   onClick={() => handleDelete(file.id, file.name)}
@@ -174,7 +212,7 @@ const FileManagementPage = () => {
         )}
       </div>
 
-      {/* Debug Info */}
+      {/* System Info */}
       <div style={{ 
         marginTop: '30px', 
         padding: '15px', 
@@ -183,10 +221,10 @@ const FileManagementPage = () => {
         fontSize: '14px',
         color: '#666'
       }}>
-        <strong>🚧 Demo Mode:</strong><br />
-        • Files are hardcoded mock data<br />
-        • All file operations return success but don't actually do anything<br />
-        • This demonstrates the protected routes working with JWT authentication<br />
+        <strong>� System Status:</strong><br />
+        • Real file storage using MongoDB GridFS<br />
+        • User-specific file isolation and ownership<br />
+        • JWT authentication protecting all file operations<br />
         • Total Files: {files.length}
       </div>
     </div>
