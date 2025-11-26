@@ -1,11 +1,16 @@
+import os
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     """Application settings"""
-    mongodb_url: str = "mongodb://localhost:27017"
-    database_name: str = "fastapi_mongo_test"
-    secret_key: str = "your-super-secret-key-change-this-in-production"
+    mongodb_url: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+    database_name: str = os.getenv("DATABASE_NAME", "mongo_test_db")
+    secret_key: str = os.getenv("SECRET_KEY", "your-super-secret-key-change-this-in-production")
+    
+    # JWT settings
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
     
     # Email settings
     smtp_host: str = "smtp.gmail.com"

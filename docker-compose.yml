@@ -1,17 +1,17 @@
-version: '3.8'
+version: '3.3'
 
 services:
   # MongoDB Database
-  mongo:
-    image: mongo:7.0
-    container_name: mongo_db
-    restart: always
+  mongodb:
+    image: mongo:5.0
+    container_name: mongo_test_mongodb
+    restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example123
-      MONGO_INITDB_DATABASE: fastapi_mongo_test
+      MONGO_INITDB_DATABASE: mongo_test_db
     volumes:
       - mongo_data:/data/db
       - mongo_config:/data/configdb
@@ -21,24 +21,24 @@ services:
       test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 10s
 
   # FastAPI Backend
   backend:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: fastapi_backend
-    restart: always
+    container_name: mongo_test_backend
+    restart: unless-stopped
     ports:
       - "8000:8000"
     depends_on:
-      mongo:
-        condition: service_healthy
+      - mongodb
     environment:
       # Database Configuration
-      MONGODB_URL: mongodb://root:example123@mongo:27017
-      DATABASE_NAME: fastapi_mongo_test
+      MONGODB_URL: mongodb://root:example123@mongodb:27017
+      DATABASE_NAME: mongo_test_db
       
       # Security Configuration
       SECRET_KEY: your-super-secret-jwt-key-change-this-in-production-please
@@ -51,49 +51,30 @@ services:
       # GridFS Configuration
       GRIDFS_BUCKET_NAME: images
     volumes:
-      - ./:/app:ro  # Read-only for production
+      - ./:/app:ro
       - uploads_data:/app/uploads
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
   # React Frontend (Production)
-  frontend:
+  webapp:
     build:
       context: ./webapp
       dockerfile: Dockerfile.prod
-      args:
-        REACT_APP_API_URL: http://localhost:8000
-    container_name: react_frontend
-    restart: always
+    container_name: mongo_test_webapp
+    restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - app-network
-
-  # React Frontend (Development) - Uncomment for development
-  # frontend-dev:
-  #   build:
-  #     context: ./webapp
-  #     dockerfile: Dockerfile.dev
-  #   container_name: react_frontend_dev
-  #   restart: always
-  #   ports:
-  #     - "3001:3000"
-  #   volumes:
-  #     - ./webapp:/app
-  #     - /app/node_modules
-  #   environment:
-  #     REACT_APP_API_URL: http://localhost:8000
-  #   networks:
-  #     - app-network
 
 networks:
   app-network:
@@ -101,8 +82,5 @@ networks:
 
 volumes:
   mongo_data:
-    driver: local
   mongo_config:
-    driver: local
   uploads_data:
-    driver: local
