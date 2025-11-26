@@ -1,6 +1,10 @@
 """
 Check what ID type is being used in the User model
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import asyncio
 from models import User
 from database import init_db

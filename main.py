@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import init_db
 from auth import auth_backend, fastapi_users
@@ -21,6 +22,15 @@ app = FastAPI(
     description="A FastAPI application with MongoDB and FastAPI-Users authentication",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Add CORS middleware to allow React app to call API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include authentication routes

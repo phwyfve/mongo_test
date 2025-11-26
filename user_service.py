@@ -166,7 +166,31 @@ def generate_random_email() -> str:
     random_part = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
     return f"testuser_{random_part}@example.com"
 
-# Synchronous wrapper for easier use in non-async contexts
+async def register_async(email: str, password: str, first_name: str, last_name: str) -> Dict[str, Any]:
+    """
+    Register a new user (or authenticate if already exists).
+    This is a convenience function that always attempts to create the user.
+    If the user already exists, it will just authenticate them instead.
+    
+    Args:
+        email: User email
+        password: User password
+        first_name: User's first name
+        last_name: User's last name
+        
+    Returns:
+        Dict with authentication result containing token and user info
+    """
+    service = UserService()
+    return await service.authenticate_email_async(
+        email=email,
+        password=password, 
+        first_name=first_name, 
+        last_name=last_name, 
+        create=True
+    )
+
+# Synchronous wrappers for easier use in non-async contexts
 def authenticate_email(email: str, password: str = "defaultpassword123", 
                       first_name: str = "Test", last_name: str = "User", 
                       create: bool = True) -> Dict[str, Any]:
@@ -176,5 +200,14 @@ def authenticate_email(email: str, password: str = "defaultpassword123",
     async def _run():
         service = UserService()
         return await service.authenticate_email_async(email, password, first_name, last_name, create)
+    
+    return asyncio.run(_run())
+
+def register_email(email: str, password: str, first_name: str, last_name: str) -> Dict[str, Any]:
+    """Synchronous wrapper for register_async"""
+    import asyncio
+    
+    async def _run():
+        return await register_async(email, password, first_name, last_name)
     
     return asyncio.run(_run())

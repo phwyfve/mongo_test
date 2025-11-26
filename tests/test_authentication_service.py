@@ -1,7 +1,11 @@
 """
-Test script to demonstrate API functionality
+Test script to demonstrate Authentication API functionality
 Run this after starting the FastAPI server
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import requests
 import json
 import asyncio
