@@ -94,14 +94,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password) => {
+  const register = async (email, password, firstName = 'New', lastName = 'User') => {
     setLoading(true);
     try {
       const response = await axios.post('/api/register', {
         email: email,
         password: password, // Use provided password
-        first_name: 'New',
-        last_name: 'User'
+        first_name: firstName,
+        last_name: lastName
       });
 
       if (response.data.success) {

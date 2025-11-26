@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../AuthContext';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -30,32 +31,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    
-    if (!email) {
-      showMessage('Please enter your email', 'error');
-      return;
-    }
 
-    if (!password) {
-      showMessage('Please enter your password', 'error');
-      return;
-    }
-
-    if (password.length < 6) {
-      showMessage('Password must be at least 6 characters long', 'error');
-      return;
-    }
-
-    const result = await register(email, password);
-    
-    if (result.success) {
-      showMessage('Registration successful! Redirecting...', 'success');
-    } else {
-      showMessage(result.error || 'Registration failed', 'error');
-    }
-  };
 
   const showMessage = (msg, type) => {
     setMessage(msg);
@@ -69,7 +45,7 @@ const LoginPage = () => {
   return (
     <div className="auth-container">
       <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>
-        📁 File Management System
+        � Sign In
       </h2>
       
       <form onSubmit={handleLogin}>
@@ -109,20 +85,19 @@ const LoginPage = () => {
         <button 
           type="submit" 
           disabled={loading || !email.trim() || !password.trim()}
-          onClick={handleLogin}
         >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-        
-        <button 
-          type="button" 
-          disabled={loading || !email.trim() || !password.trim() || password.length < 6}
-          onClick={handleRegister}
-          style={{ background: '#28a745' }}
-        >
-          {loading ? 'Registering...' : 'Register'}
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
+
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <p style={{ color: '#666' }}>
+          Don't have an account yet?{' '}
+          <Link to="/register" style={{ color: '#007bff', textDecoration: 'none' }}>
+            Create one here
+          </Link>
+        </p>
+      </div>
 
       <div style={{ 
         marginTop: '20px', 
@@ -132,11 +107,10 @@ const LoginPage = () => {
         fontSize: '14px',
         color: '#666'
       }}>
-        <strong>Security Notes:</strong><br />
-        • Password must be at least 6 characters<br />
-        • Existing users with default password "password123" can continue to use it<br />
-        • New users must create their own password<br />
-        • Try existing user: test2@hotmail.com (password: password123)
+        <strong>Demo Account:</strong><br />
+        • Email: test2@hotmail.com<br />
+        • Password: password123<br />
+        • This is an existing user you can use for testing
       </div>
     </div>
   );
