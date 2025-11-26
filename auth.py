@@ -1,17 +1,24 @@
 from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
-from fastapi_users.manager import BaseUserManager, UUIDIDMixin
+from fastapi_users.manager import BaseUserManager
 from fastapi import Depends, Request
 from models import User, get_user_db
 from config import settings
 from typing import Optional
+from beanie import PydanticObjectId
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-class UserManager(UUIDIDMixin, BaseUserManager[User, str]):
+class UserManager(BaseUserManager[User, PydanticObjectId]):
     reset_password_token_secret = settings.secret_key
     verification_token_secret = settings.secret_key
+
+    def parse_id(self, value) -> PydanticObjectId:
+        """Parse string ID to PydanticObjectId"""
+        if isinstance(value, PydanticObjectId):
+            return value
+        return PydanticObjectId(value)
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
@@ -98,7 +105,7 @@ auth_backend = AuthenticationBackend(
 )
 
 # FastAPI Users instance
-fastapi_users = FastAPIUsers[User, str](get_user_manager, [auth_backend])
+fastapi_users = FastAPIUsers[User, PydanticObjectId](get_user_manager, [auth_backend])
 
 # Current user dependencies
 current_active_user = fastapi_users.current_user(active=True)
