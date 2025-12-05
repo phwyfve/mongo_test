@@ -18,8 +18,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="FastAPI MongoDB Authentication",
-    description="A FastAPI application with MongoDB and FastAPI-Users authentication",
+    title="FastAPI MongoDB File Management App",
+    description="A FastAPI application with MongoDB, FastAPI-Users authentication, GridFS file storage, and CORS setup for React frontend.",
     version="1.0.0",
     lifespan=lifespan
 )

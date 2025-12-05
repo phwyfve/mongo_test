@@ -42,14 +42,14 @@ class FileService:
             metadata = {
                 "owner_email": user_email,
                 "owner_id": user_id,
-                "original_filename": filename,  # Keep original filename for reference
-                "display_name": filename,       # Initial display name same as original
+                "original_filename": filename,
+                "display_name": filename,
                 "content_type": content_type,
                 "upload_date": datetime.datetime.utcnow(),
                 "file_size": len(file_content)
             }
             
-            # Upload to GridFS
+            # Upload to GridFS should be closed after use
             file_id = await bucket.upload_from_stream(
                 filename=filename,
                 source=io.BytesIO(file_content),
