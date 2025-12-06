@@ -1,10 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from database import init_db
 from auth import auth_backend, fastapi_users
 from schemas import UserCreate, UserRead, UserUpdate
-from routes import router
+import traceback
+import logging
+
+# Import main routes from api_routes.py file
+from api_routes import router
+
+# Import new process management routes from routes/ directory
+from routes.merge_pdfs import router as merge_pdfs_router
+from routes.commands import router as commands_router
 
 
 @asynccontextmanager
@@ -23,6 +32,26 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add exception handler to log detailed errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch all unhandled exceptions and log them"""
+    error_msg = f"Unhandled exception: {str(exc)}"
+    traceback_str = traceback.format_exc()
+    
+    print(f"🚨 ERROR in {request.method} {request.url}")
+    print(f"Error: {error_msg}")
+    print(f"Traceback:\n{traceback_str}")
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": error_msg,
+            "traceback": traceback_str,
+            "path": str(request.url)
+        }
+    )
 
 # Add CORS middleware to allow React app to call API
 app.add_middleware(
@@ -64,6 +93,9 @@ app.include_router(
 # Include custom routes
 app.include_router(router, prefix="/api", tags=["api"])
 
+# Include process management routes
+app.include_router(merge_pdfs_router, prefix="/api", tags=["Process Management"])
+app.include_router(commands_router, prefix="/api", tags=["Process Management"])
 
 @app.get("/")
 async def root():

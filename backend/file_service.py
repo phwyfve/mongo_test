@@ -13,6 +13,7 @@ class FileService:
     def __init__(self):
         """Initialize FileService with the images bucket"""
         self._bucket = None
+        self._tmp_bucket = None
     
     async def _get_bucket(self) -> AsyncIOMotorGridFSBucket:
         """Get the GridFS bucket (lazy initialization)"""
@@ -20,6 +21,14 @@ class FileService:
             self._bucket = get_images_bucket()
         return self._bucket
     
+    async def _get_tmp_bucket(self) -> AsyncIOMotorGridFSBucket:
+        """Get the temporary files GridFS bucket (lazy initialization)"""
+        if self._tmp_bucket is None:
+            from database import get_database
+            db = get_database()
+            self._tmp_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="tmp_files")
+        return self._tmp_bucket
+
     async def upload_file(self, file_content: bytes, filename: str, content_type: str, 
                          user_email: str, user_id: str) -> Dict[str, Any]:
         """
@@ -72,6 +81,58 @@ class FileService:
                 "error": f"Upload failed: {str(e)}"
             }
     
+    async def upload_temp_file(self, file_content: bytes, filename: str, content_type: str, 
+                              user_email: str, user_id: str) -> Dict[str, Any]:
+        """
+        Upload a temporary file to GridFS tmp_files bucket
+        
+        Args:
+            file_content: The file content as bytes
+            filename: Original filename
+            content_type: MIME type of the file
+            user_email: Email of the user uploading
+            user_id: ID of the user uploading
+            
+        Returns:
+            Dict with file info and upload result
+        """
+        try:
+            bucket = await self._get_tmp_bucket()
+            
+            # Create metadata for temporary file
+            metadata = {
+                "owner_email": user_email,
+                "owner_id": user_id,
+                "original_filename": filename,
+                "content_type": content_type,
+                "upload_date": datetime.datetime.utcnow(),
+                "file_size": len(file_content),
+                "is_temporary": True
+            }
+            
+            # Upload file to tmp_files bucket
+            file_stream = io.BytesIO(file_content)
+            file_id = await bucket.upload_from_stream(
+                filename,
+                file_stream,
+                metadata=metadata
+            )
+            
+            return {
+                "success": True,
+                "file_id": str(file_id),
+                "filename": filename,
+                "size": len(file_content),
+                "content_type": content_type,
+                "bucket": "tmp_files"
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Failed to upload temporary file: {str(e)}"
+            }
+
     async def list_user_files(self, user_email: str, user_id: str) -> List[Dict[str, Any]]:
         """
         List all files for a specific user
