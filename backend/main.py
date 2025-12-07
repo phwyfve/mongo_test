@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import asyncio
 from database import init_db
 from auth import auth_backend, fastapi_users
 from schemas import UserCreate, UserRead, UserUpdate
@@ -15,6 +16,11 @@ from api_routes import router
 from routes.merge_pdfs import router as merge_pdfs_router
 from routes.commands import router as commands_router
 from routes.files import router as files_router
+from routes.admin import router as admin_router
+
+# Import cleanup service
+from cleanup_service import start_cleanup_scheduler
+from config import settings
 
 
 @asynccontextmanager
@@ -22,6 +28,14 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     await init_db()
+    
+    # Start cleanup scheduler in the background (if enabled)
+    if getattr(settings, 'enable_cleanup_scheduler', True):
+        cleanup_task = start_cleanup_scheduler()
+        print("🧹 Cleanup scheduler started")
+    else:
+        print("🚫 Cleanup scheduler disabled")
+    
     yield
     # Shutdown (if needed)
 
@@ -51,7 +65,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     error_msg = f"Unhandled exception: {str(exc)}"
     traceback_str = traceback.format_exc()
     
-    print(f"🚨 ERROR in {request.method} {request.url}")
+    print(f"ERROR in {request.method} {request.url}")
     print(f"Error: {error_msg}")
     print(f"Traceback:\n{traceback_str}")
     
@@ -108,6 +122,7 @@ app.include_router(router, prefix="/api", tags=["api"])
 app.include_router(merge_pdfs_router, prefix="/api", tags=["Process Management"])
 app.include_router(commands_router, prefix="/api", tags=["Process Management"])
 app.include_router(files_router, prefix="/api", tags=["File Downloads"])
+app.include_router(admin_router, prefix="/api", tags=["Admin"])
 app.include_router(files_router, prefix="/api", tags=["File Downloads"])
 
 @app.get("/")
