@@ -25,6 +25,16 @@ async def lifespan(app: FastAPI):
     # Shutdown (if needed)
 
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+        logging.FileHandler('app.log', encoding='utf-8')  # File output
+    ]
+)
+
 # Create FastAPI app
 app = FastAPI(
     title="FastAPI MongoDB File Management App",

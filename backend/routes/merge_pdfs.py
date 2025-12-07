@@ -4,12 +4,16 @@ Handles PDF file upload and merge command creation
 """
 
 import asyncio
+import logging
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from typing import List
 from models import User
 from auth import current_active_user
 from file_service import FileService
 from process_manager import create_command, process_command
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -29,37 +33,47 @@ async def merge_pdfs_endpoint(
     5. Return command ID for polling
     """
     
+    logger.info(f"🔥 Starting PDF merge for user {user.email} with {len(files)} files")
+    
     if len(files) < 2:
+        logger.warning(f"❌ Not enough files: {len(files)} < 2")
         raise HTTPException(
             status_code=400,
             detail="At least 2 PDF files are required for merging"
         )
     
     # Validate all files are PDFs
-    for file in files:
+    for i, file in enumerate(files):
+        logger.info(f"📁 File {i+1}: {file.filename} ({file.content_type})")
         if not file.content_type or not file.content_type.startswith('application/pdf'):
+            logger.error(f"❌ Invalid file type: {file.content_type}")
             raise HTTPException(
                 status_code=400,
                 detail=f"File '{file.filename}' is not a PDF. Only PDF files are allowed."
             )
     
     try:
+        logger.info("🔧 Creating FileService instance...")
         file_service = FileService()
         uploaded_file_ids = []
         
         # Upload each file to GridFS tmp_files bucket
-        for file in files:
+        for i, file in enumerate(files):
+            logger.info(f"📤 Uploading file {i+1}: {file.filename}")
+            
             # Read file content
             content = await file.read()
+            logger.info(f"📊 File size: {len(content)} bytes")
             
             if len(content) == 0:
+                logger.error(f"❌ Empty file: {file.filename}")
                 raise HTTPException(
                     status_code=400,
                     detail=f"File '{file.filename}' is empty"
                 )
             
             # Upload to tmp_files bucket (different from user files)
-            # We'll use a separate GridFS bucket for temporary processing files
+            logger.info(f"🗃️ Calling upload_temp_file for {file.filename}")
             result = await file_service.upload_temp_file(
                 file_content=content,
                 filename=file.filename,
@@ -68,15 +82,20 @@ async def merge_pdfs_endpoint(
                 user_id=str(user.id)
             )
             
+            logger.info(f"📋 Upload result: {result}")
+            
             if not result.get("success"):
+                logger.error(f"❌ Upload failed: {result}")
                 raise HTTPException(
                     status_code=500,
                     detail=f"Failed to upload file '{file.filename}': {result.get('error')}"
                 )
             
             uploaded_file_ids.append(result["file_id"])
+            logger.info(f"✅ File uploaded with ID: {result['file_id']}")
         
         # Create merge command
+        logger.info(f"🚀 Creating merge command with file IDs: {uploaded_file_ids}")
         command_id = await create_command(
             shell_command="MergePdfs",
             args={
@@ -86,10 +105,13 @@ async def merge_pdfs_endpoint(
             }
         )
         
+        logger.info(f"✅ Command created with ID: {command_id}")
+        
         # Start command processing asynchronously
-        # This will run in the background and not block the response
+        logger.info("🔄 Starting async command processing...")
         asyncio.create_task(process_command(command_id))
         
+        logger.info("🎉 PDF merge request completed successfully")
         return {
             "success": True,
             "command_id": command_id,
@@ -101,8 +123,10 @@ async def merge_pdfs_endpoint(
         }
         
     except HTTPException:
+        logger.error("❌ HTTP Exception occurred (re-raising)")
         raise
     except Exception as e:
+        logger.error(f"💥 Unexpected error: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to process PDF merge request: {str(e)}"

@@ -29,3 +29,7 @@ async def init_db():
 def get_images_bucket():
     """Get the images GridFS bucket"""
     return images_bucket
+
+def get_database():
+    """Get the database instance"""
+    return database

@@ -6,6 +6,6 @@ Maps command names to their handler functions
 from .MergePdfs import merge_pdfs
 
 # Command registry - maps shell command names to handler functions
-commands = {
+COMMAND_REGISTRY = {
     "MergePdfs": merge_pdfs
 }

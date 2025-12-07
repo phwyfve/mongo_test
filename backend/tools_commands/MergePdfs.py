@@ -5,12 +5,16 @@ Merges multiple PDF files into a single PDF
 
 import io
 import json
+import logging
 from typing import Dict, Any, List
 from bson import ObjectId
 import gridfs
 from PyPDF2 import PdfWriter, PdfReader
 
-async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, Any]:
+# Set up logging for this module
+logger = logging.getLogger('MergePdfs')
+
+def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, Any]:
     """
     Merge multiple PDF files from GridFS into a single PDF
     
@@ -30,7 +34,7 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
     if len(file_ids) < 2:
         raise ValueError("At least 2 PDF files are required for merging")
     
-    print(f"Merging {len(file_ids)} PDF files: {file_ids}")
+    logger.info(f"Starting PDF merge of {len(file_ids)} files: {file_ids}")
     
     # Create PDF writer for merged output
     pdf_writer = PdfWriter()
@@ -39,7 +43,7 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
     try:
         # Process each PDF file
         for i, file_id_str in enumerate(file_ids):
-            print(f"Processing file {i+1}/{len(file_ids)}: {file_id_str}")
+            logger.info(f"Processing file {i+1}/{len(file_ids)}: {file_id_str}")
             
             # Convert string ID to ObjectId
             try:
@@ -56,7 +60,7 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
                     "filename": grid_file.filename,
                     "size": len(file_content)
                 })
-                print(f"Downloaded {grid_file.filename} ({len(file_content)} bytes)")
+                logger.info(f"Downloaded {grid_file.filename} ({len(file_content)} bytes)")
             except gridfs.NoFile:
                 raise ValueError(f"File with ID '{file_id_str}' not found in GridFS")
             except Exception as e:
@@ -69,7 +73,7 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
                 
                 # Add all pages from this PDF to the writer
                 page_count = len(pdf_reader.pages)
-                print(f"Adding {page_count} pages from {grid_file.filename}")
+                logger.info(f"Adding {page_count} pages from {grid_file.filename}")
                 
                 for page_num in range(page_count):
                     pdf_writer.add_page(pdf_reader.pages[page_num])
@@ -82,7 +86,7 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
         pdf_writer.write(merged_buffer)
         merged_content = merged_buffer.getvalue()
         
-        print(f"Merged PDF created successfully ({len(merged_content)} bytes)")
+        logger.info(f"Merged PDF created successfully ({len(merged_content)} bytes)")
         
         # Generate filename for merged PDF
         merged_filename = f"merged_pdf_{len(file_ids)}_files.pdf"
@@ -99,7 +103,7 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
             }
         )
         
-        print(f"Merged PDF uploaded to GridFS with ID: {merged_file_id}")
+        logger.info(f"Merged PDF uploaded to GridFS with ID: {merged_file_id}")
         
         # Return success result
         return {
@@ -113,5 +117,6 @@ async def merge_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, A
         
     except Exception as e:
         # Ensure proper error handling
-        print(f"PDF merge failed: {str(e)}")
+        logger.error(f"PDF merge failed: {str(e)}")
+        logger.exception("Full exception details:")
         raise  # Re-raise to be caught by myshell.py

@@ -23,7 +23,7 @@ async def create_command(shell_command: str, args: Dict[str, Any]) -> str:
     Returns:
         str: The created command ID
     """
-    client = AsyncIOMotorClient(settings.database_url)
+    client = AsyncIOMotorClient(settings.mongodb_url)
     db = client[settings.database_name]
     
     command_doc = {
@@ -38,7 +38,7 @@ async def create_command(shell_command: str, args: Dict[str, Any]) -> str:
     }
     
     result = await db.commands.insert_one(command_doc)
-    await client.close()
+    client.close()
     
     return str(result.inserted_id)
 
@@ -53,7 +53,7 @@ async def process_command(command_id: str) -> Dict[str, Any]:
     Returns:
         Dict containing execution results
     """
-    client = AsyncIOMotorClient(settings.database_url)
+    client = AsyncIOMotorClient(settings.mongodb_url)
     db = client[settings.database_name]
     
     try:
@@ -66,9 +66,9 @@ async def process_command(command_id: str) -> Dict[str, Any]:
         # Execute the shell command and wait for completion
         print(f"Starting subprocess for command: {command_id}")
         
-        # Start subprocess - this will call our shell script
+        # Start subprocess - this will call our Python shell script
         process = subprocess.Popen(
-            ["bash", "me_shell.sh", command_id],
+            ["python", "me_shell.py", command_id],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -86,7 +86,7 @@ async def process_command(command_id: str) -> Dict[str, Any]:
             "completed_at": datetime.utcnow()
         }
         
-        # If the subprocess completed successfully, the myshell.py should have
+        # If the subprocess completed successfully, the me_shell.py should have
         # already updated stdout/stderr. But we capture the process output too.
         if exit_state == 0:
             print(f"Command {command_id} completed successfully")
@@ -97,7 +97,7 @@ async def process_command(command_id: str) -> Dict[str, Any]:
             if stderr.strip():
                 print(f"Process stderr: {stderr}")
             
-            # Update with subprocess error if myshell.py didn't handle it
+            # Update with subprocess error if me_shell.py didn't handle it
             await db.commands.update_one(
                 {"_id": ObjectId(command_id)},
                 {
@@ -109,7 +109,7 @@ async def process_command(command_id: str) -> Dict[str, Any]:
                 }
             )
         
-        # If exit_state is 0, myshell.py should have already updated the record
+        # If exit_state is 0, me_shell.py should have already updated the record
         if exit_state == 0:
             await db.commands.update_one(
                 {"_id": ObjectId(command_id)},
@@ -118,7 +118,7 @@ async def process_command(command_id: str) -> Dict[str, Any]:
         
         # Return final command state
         final_command = await db.commands.find_one({"_id": ObjectId(command_id)})
-        await client.close()
+        client.close()
         
         return {
             "command_id": command_id,
@@ -143,7 +143,7 @@ async def process_command(command_id: str) -> Dict[str, Any]:
                 }
             }
         )
-        await client.close()
+        client.close()
         
         return {
             "command_id": command_id,
@@ -163,12 +163,12 @@ async def get_command_status(command_id: str) -> Dict[str, Any]:
     Returns:
         Dict containing command status and results
     """
-    client = AsyncIOMotorClient(settings.database_url)
+    client = AsyncIOMotorClient(settings.mongodb_url)
     db = client[settings.database_name]
     
     try:
         command_doc = await db.commands.find_one({"_id": ObjectId(command_id)})
-        await client.close()
+        client.close()
         
         if not command_doc:
             return {
@@ -189,7 +189,7 @@ async def get_command_status(command_id: str) -> Dict[str, Any]:
         }
         
     except Exception as e:
-        await client.close()
+        client.close()
         return {
             "error": f"Failed to get command status: {str(e)}",
             "command_id": command_id
