@@ -32,7 +32,7 @@ export default function Wait() {
         
         // Transform command status to process status
         const status: ProcessStatus = {
-          id: commandStatus.id,
+          id: commandStatus.command_id,
           status: commandStatus.exit_state === -1 ? 'processing' : 
                   commandStatus.exit_state === 0 ? 'completed' : 'failed',
           progress: commandStatus.exit_state === -1 ? 50 : 100,

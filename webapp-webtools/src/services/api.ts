@@ -47,12 +47,15 @@ export const authApi = {
 
 // Command Status Types
 export interface CommandStatus {
-  id: string
+  command_id: string
   shell_command: string
   args: Record<string, unknown>
   exit_state: number
   stdout: string | null
   stderr: string | null
+  created_at?: string
+  started_at?: string | null
+  completed_at?: string | null
 }
 
 export interface MergePdfsResult {
@@ -80,12 +83,12 @@ export const processApi = {
   // Get command status
   getCommandStatus: async (commandId: string): Promise<CommandStatus> => {
     const response = await api.get(`/api/command/${commandId}`)
-    return response.data
+    return response.data.command  // Extract the command data from the wrapper
   },
 
-  // Build download URL for files
+  // Build download URL for processed files
   getFileDownloadUrl: (fileId: string): string => {
-    return `${API_BASE_URL}/api/files/${fileId}`
+    return `${API_BASE_URL}/api/processed-files/${fileId}`
   },
 
   // Legacy API methods (keep for backwards compatibility with other tools)
@@ -129,7 +132,7 @@ export const processApi = {
     return {
       success: true,
       process: {
-        id: status.id,
+        id: status.command_id,
         status: status.exit_state === -1 ? 'processing' : 
                 status.exit_state === 0 ? 'completed' : 'failed',
         progress: status.exit_state === -1 ? 50 : 100,

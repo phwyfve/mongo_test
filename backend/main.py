@@ -14,6 +14,7 @@ from api_routes import router
 # Import new process management routes from routes/ directory
 from routes.merge_pdfs import router as merge_pdfs_router
 from routes.commands import router as commands_router
+from routes.files import router as files_router
 
 
 @asynccontextmanager
@@ -106,6 +107,8 @@ app.include_router(router, prefix="/api", tags=["api"])
 # Include process management routes
 app.include_router(merge_pdfs_router, prefix="/api", tags=["Process Management"])
 app.include_router(commands_router, prefix="/api", tags=["Process Management"])
+app.include_router(files_router, prefix="/api", tags=["File Downloads"])
+app.include_router(files_router, prefix="/api", tags=["File Downloads"])
 
 @app.get("/")
 async def root():
