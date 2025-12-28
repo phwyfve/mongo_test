@@ -29,33 +29,40 @@ export default function Home() {
             </div>
 
             <div className="grid gap-4">
-              {category.tools.map((tool) => (
-                <Link
-                  key={tool.id}
-                  to={`/upload/${category.id}/${tool.id}`}
-                  className={`block p-4 rounded-lg border-2 border-transparent ${category.bgColor} transition-all hover:border-gray-300`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{tool.icon}</div>
-                    <div className="flex-1">
-                      <h3 className={`font-semibold ${tool.color}`}>
-                        {tool.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {tool.description}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Formats: {tool.acceptedFormats.join(', ')}
-                      </p>
+              {category.tools.map((tool) => {
+                // Special handling for split-pdf tool
+                const toolPath = category.id === 'split' && tool.id === 'split-pdf'
+                  ? '/split/split-pdf'
+                  : `/upload/${category.id}/${tool.id}`
+                
+                return (
+                  <Link
+                    key={tool.id}
+                    to={toolPath}
+                    className={`block p-4 rounded-lg border-2 border-transparent ${category.bgColor} transition-all hover:border-gray-300`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="text-2xl">{tool.icon}</div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold ${tool.color}`}>
+                          {tool.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {tool.description}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Formats: {tool.acceptedFormats.join(', ')}
+                        </p>
+                      </div>
+                      <div className="text-gray-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-gray-400">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           </div>
         ))}

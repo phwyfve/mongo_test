@@ -45,6 +45,24 @@ export const categories: Category[] = [
     ],
   },
   {
+    id: 'split',
+    name: 'Split',
+    description: 'Split files into multiple parts',
+    color: 'text-purple-700',
+    borderColor: 'border-purple-500',
+    bgColor: 'bg-purple-50 hover:bg-purple-100',
+    tools: [
+      {
+        id: 'split-pdf',
+        name: 'Split PDF',
+        description: 'Split a PDF file into individual pages',
+        acceptedFormats: ['.pdf'],
+        icon: '✂️',
+        color: 'text-purple-600',
+      },
+    ],
+  },
+  {
     id: 'convert',
     name: 'Convert to PDF',
     description: 'Convert various file formats to PDF',

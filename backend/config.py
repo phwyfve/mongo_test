@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     """Application settings"""
-    mongodb_url: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+    mongodb_url: str = os.getenv("MONGODB_URL", "mongodb://root:example123@localhost:27017/?authSource=admin")
     database_name: str = os.getenv("DATABASE_NAME", "mongo_test_db")
     secret_key: str = os.getenv("SECRET_KEY", "your-super-secret-key-change-this-in-production")
     

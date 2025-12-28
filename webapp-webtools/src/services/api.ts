@@ -80,6 +80,19 @@ export const processApi = {
     return response.data
   },
 
+  // Create SplitPdf command via file upload
+  createSplitPdfCommand: async (file: File): Promise<{ command_id: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post('/api/splitPdf', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
   // Get command status
   getCommandStatus: async (commandId: string): Promise<CommandStatus> => {
     const response = await api.get(`/api/command/${commandId}`)

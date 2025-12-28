@@ -8,6 +8,7 @@ import Register from './pages/Register'
 import Upload from './pages/Upload'
 import Wait from './pages/Wait'
 import Download from './pages/Download'
+import SplitPdf from './pages/SplitPdf'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -26,6 +27,11 @@ function App() {
             <Route path="/upload/:category/:tool" element={
               <ProtectedRoute>
                 <Upload />
+              </ProtectedRoute>
+            } />
+            <Route path="/split/split-pdf" element={
+              <ProtectedRoute>
+                <SplitPdf />
               </ProtectedRoute>
             } />
             <Route path="/wait/:processId" element={
