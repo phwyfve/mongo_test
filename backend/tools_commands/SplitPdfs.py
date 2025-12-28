@@ -25,7 +25,7 @@ def split_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, Any]:
         fs: GridFS instance for tmp_files bucket
         
     Returns:
-        Dict containing 'zip_file_id' of the resulting ZIP archive
+        Dict containing 'output_file_id' of the resulting ZIP archive
     """
     
     file_id_str = args.get("file_id")
@@ -126,11 +126,11 @@ def split_pdfs(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[str, Any]:
         
         logger.info(f"ZIP archive uploaded to GridFS with ID: {zip_file_id}")
         
-        # Return success result
+        # Return success result with standardized field names
         return {
             "success": True,
-            "zip_file_id": str(zip_file_id),
-            "zip_filename": zip_filename,
+            "output_file_id": str(zip_file_id),
+            "output_filename": zip_filename,
             "total_pages": total_pages,
             "original_file": {
                 "id": file_id_str,

@@ -13,6 +13,8 @@ export default function SplitPdf() {
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<{
     output_file_id: string
+    output_filename?: string
+    total_pages?: number
   } | null>(null)
 
   // Handle file selection from UploadSection
@@ -46,8 +48,28 @@ export default function SplitPdf() {
 
   // Handle processing completion
   const handleComplete = (commandResult: any) => {
-    console.log('✅ Processing complete, result:', commandResult)
-    setResult(commandResult)
+    console.log('✅ Processing complete, full result:', commandResult)
+    console.log('📦 Result structure:', JSON.stringify(commandResult, null, 2))
+    
+    // Handle both naming conventions (backward compatibility)
+    const fileId = commandResult.output_file_id || commandResult.zip_file_id
+    const filename = commandResult.output_filename || commandResult.zip_filename || 'split_pages.zip'
+    
+    console.log('📦 File ID:', fileId)
+    console.log('📦 Filename:', filename)
+    console.log('📦 Total pages:', commandResult.total_pages)
+    
+    if (!fileId) {
+      console.error('❌ No file ID in result:', commandResult)
+      alert('Error: No file ID received from server')
+      return
+    }
+    
+    setResult({
+      output_file_id: fileId,
+      output_filename: filename,
+      total_pages: commandResult.total_pages
+    })
   }
 
   // Handle reset to start over
@@ -63,10 +85,10 @@ export default function SplitPdf() {
     return (
       <DownloadSection
         fileId={result.output_file_id}
-        filename="split_pages.zip"
+        filename={result.output_filename || 'split_pages.zip'}
         onReset={handleReset}
         title="Your PDF has been split!"
-        description="Click the button below to download a ZIP file containing all individual pages."
+        description={`Successfully split into ${result.total_pages || 'multiple'} pages. Download the ZIP file below.`}
       />
     )
   }
