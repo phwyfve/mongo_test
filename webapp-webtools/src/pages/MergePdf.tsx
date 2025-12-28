@@ -5,33 +5,33 @@ import WaitSection from '../components/workflow/WaitSection'
 import DownloadSection from '../components/workflow/DownloadSection'
 import { processApi } from '../services/api'
 
-export default function SplitPdf() {
+export default function MergePdf() {
   const [searchParams, setSearchParams] = useSearchParams()
   const commandId = searchParams.get('command')
 
   const [uploading, setUploading] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [result, setResult] = useState<{
-    output_file_id: string
+    merged_file_id: string
   } | null>(null)
 
   // Handle file selection from UploadSection
   const handleFilesSelected = (selectedFiles: File[]) => {
-    setFile(selectedFiles[0])
+    setFiles(selectedFiles)
   }
 
   // Handle upload and command creation
   const handleUpload = async () => {
-    if (!file) {
-      alert('Please select a PDF file to split')
+    if (files.length < 2) {
+      alert('Please select at least 2 PDF files to merge')
       return
     }
 
     try {
       setUploading(true)
-      console.log('📤 Uploading file for split:', file.name)
+      console.log('📤 Uploading files for merge:', files.map(f => f.name))
 
-      const response = await processApi.createSplitPdfCommand(file)
+      const response = await processApi.createMergePdfsCommand(files)
       console.log('✅ Command created:', response.command_id)
 
       // Update URL with command ID
@@ -53,7 +53,7 @@ export default function SplitPdf() {
   // Handle reset to start over
   const handleReset = () => {
     setSearchParams({})
-    setFile(null)
+    setFiles([])
     setResult(null)
   }
 
@@ -62,11 +62,11 @@ export default function SplitPdf() {
     // Download phase
     return (
       <DownloadSection
-        fileId={result.output_file_id}
-        filename="split_pages.zip"
+        fileId={result.merged_file_id}
+        filename="merged.pdf"
         onReset={handleReset}
-        title="Your PDF has been split!"
-        description="Click the button below to download a ZIP file containing all individual pages."
+        title="Your PDFs have been merged!"
+        description="Click the button below to download your merged PDF file."
       />
     )
   }
@@ -90,30 +90,36 @@ export default function SplitPdf() {
     <div className="max-w-4xl mx-auto py-12 px-4">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Split PDF</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Merge PDFs</h1>
           <p className="text-gray-600">
-            Extract individual pages from your PDF. Upload a PDF file to split into separate pages.
+            Combine multiple PDF files into a single document. Upload at least 2 PDF files.
           </p>
         </div>
 
         <UploadSection
           acceptedFormats={['.pdf']}
-          multiple={false}
+          multiple={true}
           onFilesSelected={handleFilesSelected}
           onError={(error: string) => alert(error)}
-          uploadButtonText="Split PDF"
+          uploadButtonText="Merge PDFs"
         />
 
         {/* Upload button */}
-        {file && (
+        {files.length > 0 && (
           <div className="mt-6">
             <button
               onClick={handleUpload}
-              disabled={uploading}
+              disabled={uploading || files.length < 2}
               className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              {uploading ? 'Uploading...' : 'Split PDF into Pages'}
+              {uploading ? 'Uploading...' : `Merge ${files.length} PDF${files.length > 1 ? 's' : ''}`}
             </button>
+            
+            {files.length < 2 && (
+              <p className="text-sm text-amber-600 text-center mt-2">
+                Please select at least 2 PDF files to merge
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -122,10 +128,10 @@ export default function SplitPdf() {
       <div className="mt-8 bg-blue-50 rounded-lg p-6">
         <h3 className="font-semibold text-blue-900 mb-2">How it works:</h3>
         <ol className="list-decimal list-inside space-y-1 text-blue-800">
-          <li>Select a PDF file using the upload area</li>
-          <li>Click "Split PDF into Pages" to start processing</li>
-          <li>Wait while your PDF is being split into individual pages</li>
-          <li>Download a ZIP file containing all pages as separate PDFs</li>
+          <li>Select 2 or more PDF files using the upload area</li>
+          <li>Click "Merge PDFs" to start processing</li>
+          <li>Wait while your files are being merged</li>
+          <li>Download your merged PDF file</li>
         </ol>
       </div>
     </div>

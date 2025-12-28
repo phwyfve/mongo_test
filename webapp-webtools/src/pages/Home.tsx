@@ -30,10 +30,15 @@ export default function Home() {
 
             <div className="grid gap-4">
               {category.tools.map((tool) => {
-                // Special handling for split-pdf tool
-                const toolPath = category.id === 'split' && tool.id === 'split-pdf'
-                  ? '/split/split-pdf'
-                  : `/upload/${category.id}/${tool.id}`
+                // New hybrid architecture routes
+                let toolPath = `/upload/${category.id}/${tool.id}` // Default legacy path
+                
+                // Map specific tools to their hybrid routes
+                if (category.id === 'merge' && tool.id === 'merge-pdf') {
+                  toolPath = '/merge-pdfs'
+                } else if (category.id === 'split' && tool.id === 'split-pdf') {
+                  toolPath = '/split-pdf'
+                }
                 
                 return (
                   <Link

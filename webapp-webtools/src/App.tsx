@@ -9,6 +9,7 @@ import Upload from './pages/Upload'
 import Wait from './pages/Wait'
 import Download from './pages/Download'
 import SplitPdf from './pages/SplitPdf'
+import MergePdf from './pages/MergePdf'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -24,6 +25,20 @@ function App() {
                 <Home />
               </ProtectedRoute>
             } />
+            
+            {/* New hybrid architecture routes */}
+            <Route path="/merge-pdfs" element={
+              <ProtectedRoute>
+                <MergePdf />
+              </ProtectedRoute>
+            } />
+            <Route path="/split-pdf" element={
+              <ProtectedRoute>
+                <SplitPdf />
+              </ProtectedRoute>
+            } />
+
+            {/* Legacy routes (for backward compatibility) */}
             <Route path="/upload/:category/:tool" element={
               <ProtectedRoute>
                 <Upload />
