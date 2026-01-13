@@ -93,6 +93,22 @@ export const processApi = {
     return response.data
   },
 
+  // Create MergeImages command via file upload
+  createMergeImagesCommand: async (files: File[]): Promise<{ command_id: string }> => {
+    const formData = new FormData()
+    
+    files.forEach((file) => {
+      formData.append('files', file)
+    })
+
+    const response = await api.post('/api/mergeImages', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
   // Get command status
   getCommandStatus: async (commandId: string): Promise<CommandStatus> => {
     const response = await api.get(`/api/command/${commandId}`)

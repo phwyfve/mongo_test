@@ -36,9 +36,9 @@ export const categories: Category[] = [
       },
       {
         id: 'merge-images',
-        name: 'Merge Images',
-        description: 'Combine multiple images into one collage',
-        acceptedFormats: ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
+        name: 'Merge Images to PDF',
+        description: 'Combine multiple images into one PDF',
+        acceptedFormats: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'],
         icon: '🖼️',
         color: 'text-blue-600',
       },

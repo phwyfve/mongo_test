@@ -36,6 +36,10 @@ export default function Home() {
                 // Map specific tools to their hybrid routes
                 if (category.id === 'merge' && tool.id === 'merge-pdf') {
                   toolPath = '/merge-pdfs'
+                } else if (category.id === 'merge' && tool.id === 'merge-images') {
+                  toolPath = '/merge-images'
+                } else if (category.id === 'convert' && tool.id === 'image-to-pdf') {
+                  toolPath = '/merge-images'  // Same functionality as merge-images
                 } else if (category.id === 'split' && tool.id === 'split-pdf') {
                   toolPath = '/split-pdf'
                 }

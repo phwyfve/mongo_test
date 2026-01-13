@@ -10,6 +10,7 @@ import Wait from './pages/Wait'
 import Download from './pages/Download'
 import SplitPdf from './pages/SplitPdf'
 import MergePdf from './pages/MergePdf'
+import MergeImages from './pages/MergeImages'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -30,6 +31,11 @@ function App() {
             <Route path="/merge-pdfs" element={
               <ProtectedRoute>
                 <MergePdf />
+              </ProtectedRoute>
+            } />
+            <Route path="/merge-images" element={
+              <ProtectedRoute>
+                <MergeImages />
               </ProtectedRoute>
             } />
             <Route path="/split-pdf" element={

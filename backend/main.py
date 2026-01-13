@@ -15,6 +15,7 @@ from api_routes import router
 # Import new process management routes from routes/ directory
 from routes.merge_pdfs import router as merge_pdfs_router
 from routes.split_pdfs import router as split_pdfs_router
+from routes.merge_images import router as merge_images_router
 from routes.commands import router as commands_router
 from routes.files import router as files_router
 from routes.admin import router as admin_router
@@ -122,6 +123,7 @@ app.include_router(router, prefix="/api", tags=["api"])
 # Include process management routes
 app.include_router(merge_pdfs_router, prefix="/api", tags=["Process Management"])
 app.include_router(split_pdfs_router, prefix="/api", tags=["Process Management"])
+app.include_router(merge_images_router, prefix="/api", tags=["Process Management"])
 app.include_router(commands_router, prefix="/api", tags=["Process Management"])
 app.include_router(files_router, prefix="/api", tags=["File Downloads"])
 app.include_router(admin_router, prefix="/api", tags=["Admin"])
