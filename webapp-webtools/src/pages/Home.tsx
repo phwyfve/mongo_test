@@ -40,6 +40,8 @@ export default function Home() {
                   toolPath = '/merge-images'
                 } else if (category.id === 'convert' && tool.id === 'image-to-pdf') {
                   toolPath = '/merge-images'  // Same functionality as merge-images
+                } else if (category.id === 'convert' && tool.id === 'excel-to-pdf') {
+                  toolPath = '/excel-to-pdf'
                 } else if (category.id === 'split' && tool.id === 'split-pdf') {
                   toolPath = '/split-pdf'
                 }

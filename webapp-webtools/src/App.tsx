@@ -11,6 +11,7 @@ import Download from './pages/Download'
 import SplitPdf from './pages/SplitPdf'
 import MergePdf from './pages/MergePdf'
 import MergeImages from './pages/MergeImages'
+import XlsToPdf from './pages/XlsToPdf'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -36,6 +37,11 @@ function App() {
             <Route path="/merge-images" element={
               <ProtectedRoute>
                 <MergeImages />
+              </ProtectedRoute>
+            } />
+            <Route path="/excel-to-pdf" element={
+              <ProtectedRoute>
+                <XlsToPdf />
               </ProtectedRoute>
             } />
             <Route path="/split-pdf" element={

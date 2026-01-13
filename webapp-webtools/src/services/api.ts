@@ -109,6 +109,22 @@ export const processApi = {
     return response.data
   },
 
+  // Create XlsToPdf command via file upload
+  createXlsToPdfCommand: async (files: File[]): Promise<{ command_id: string }> => {
+    const formData = new FormData()
+    
+    files.forEach((file) => {
+      formData.append('files', file)
+    })
+
+    const response = await api.post('/api/xlsToPdf', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
   // Get command status
   getCommandStatus: async (commandId: string): Promise<CommandStatus> => {
     const response = await api.get(`/api/command/${commandId}`)
